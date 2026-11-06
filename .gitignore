@@ -1,0 +1,12 @@
+# Only publish the standalone NAZO RUSH Flash Trainer!
+# Exclude all local font files, font playground, ZINE studio, and glyph tables:
+CL_DebutPack/
+*.otf
+*.ttf
+*.woff
+*.woff2
+.DS_Store
+local-playground.html
+zine.html
+css/
+js/
