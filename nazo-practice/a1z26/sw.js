@@ -1,4 +1,4 @@
-const CACHE_NAME = 'a1z26-flash-v3';
+const CACHE_NAME = 'a1z26-flash-v4';
 const ASSETS = [
   './',
   './index.html',

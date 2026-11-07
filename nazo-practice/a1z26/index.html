@@ -801,7 +801,7 @@
       max-width: 520px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 6px;
     }
 
@@ -995,22 +995,6 @@
       </div>
       <div class="sheet-grid" id="sheet-26-grid"></div>
     </section>
-
-    <!-- ==================================================================
-         TAB 4: SMARTPHONE OFFLINE GUIDE
-         ================================================================== -->
-    <section class="nazo-view" id="view-phone" style="justify-content:flex-start;overflow-y:auto;max-height:74vh;">
-      <div class="guide-box">
-        <h3 style="color:var(--nazo-accent);margin-bottom:6px;">📱 明日の電車内でスマホで遊ぶ方法（ホスティング不要）</h3>
-        <p>
-          スマホをMacと同じ自宅Wi-Fiに繋ぎ、Safari / Chrome で以下のURLを1回開いて「<strong>ホーム画面に追加</strong>」してください。オフラインキャッシュされるため、明日の電車内でも通信なしで遊べます！
-        </p>
-        <div class="url-copy-box">https://hirafish.github.io/nazo-practice/a1z26/</div>
-        <button type="button" class="mini-pill active" id="btn-download-self" style="margin-top:10px;width:100%;padding:10px;font-weight:900;">
-          ⬇ AirDrop送信用・単一HTMLを保存 (nazo-alpha-trainer.html)
-        </button>
-      </div>
-    </section>
   </div>
 
   <!-- Score Attack Result Modal (YutaONE Vector Rank Emblem) -->
@@ -1044,12 +1028,8 @@
         <span style="font-size:9px;opacity:0.75;">連続暗算</span>
       </button>
       <button type="button" class="tabbar-btn" data-nazo-tab="sheet">
-        <span>📖 暗記表・統計</span>
-        <span style="font-size:9px;opacity:0.75;">EJOTY・最速</span>
-      </button>
-      <button type="button" class="tabbar-btn" data-nazo-tab="phone">
-        <span>📱 電車で遊ぶ</span>
-        <span style="font-size:9px;opacity:0.75;">スマホ転送</span>
+        <span>📖 暗記表・ランク</span>
+        <span style="font-size:9px;opacity:0.75;">EJOTY・統計</span>
       </button>
     </div>
   </nav>
@@ -2276,7 +2256,16 @@
 })();
 
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-      navigator.serviceWorker.register("./sw.js").catch(function() {});
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function() {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+      navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then(function(reg) {
+        reg.update();
+      }).catch(function() {});
     }
   </script>
 </body>
