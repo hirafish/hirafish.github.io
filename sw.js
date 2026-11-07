@@ -1,33 +1,31 @@
-const CACHE_NAME = 'nazo-rush-pwa-v2';
-const CORE_ASSETS = [
+const CACHE_NAME = 'hirafish-aquarium-v2';
+const ASSETS = [
   './',
-  './nazo-alpha-trainer.html'
+  './index.html',
+  './nazo-practice/',
+  './nazo-practice/index.html',
+  './nazo-practice/a1z26/',
+  './nazo-practice/a1z26/index.html'
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
-    ).then(() => self.clients.claim())
+    )
   );
+  self.clients.claim();
 });
 
-// Network-first with instant offline cache fallback (Reload works 100% offline on HTTPS GitHub Pages!)
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith(
-    fetch(event.request)
-      .then((networkRes) => {
-        const clone = networkRes.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return networkRes;
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./nazo-alpha-trainer.html')))
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((cached) => cached || fetch(e.request))
   );
 });
