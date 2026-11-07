@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#030812" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="水槽(仮)" />
+  <title>水槽(仮) // hirafishの水槽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cyan: #38bdf8;
+      --aqua: #2dd4bf;
+      --gold: #fbbf24;
+      --coral: #fb923c;
+      --violet: #c084fc;
+      --glass: rgba(6, 18, 36, 0.62);
+      --border: rgba(125, 211, 252, 0.24);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: #030812;
+      color: #f0f9ff;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: crosshair;
+    }
+
+    #aquarium-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+    }
+
+    .caustics-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 85% 45% at 50% -10%, rgba(56, 189, 248, 0.22), transparent 70%),
+        radial-gradient(circle at 80% 25%, rgba(45, 212, 191, 0.11), transparent 45%),
+        radial-gradient(circle at 20% 75%, rgba(192, 132, 252, 0.08), transparent 50%);
+      mix-blend-mode: screen;
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      box-shadow: inset 0 0 130px rgba(1, 3, 9, 0.88);
+    }
+
+    /* Top Museum Header */
+    .hud-bar {
+      position: fixed;
+      top: env(safe-area-inset-top, 14px);
+      left: 16px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .glass-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      color: #e0f2fe;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .glass-btn:hover, .glass-btn:active {
+      border-color: var(--cyan);
+      background: rgba(14, 42, 76, 0.8);
+      transform: translateY(-1px);
+    }
+
+    /* Museum Title Plaque (Top Center / Floating) */
+    .museum-plaque {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 14px) + 52px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 8;
+      text-align: center;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .plaque-svg {
+      width: 160px;
+      margin: 0 auto 4px;
+      color: var(--aqua);
+      opacity: 0.85;
+      filter: drop-shadow(0 0 12px rgba(45, 212, 191, 0.4));
+    }
+
+    .plaque-svg svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .plaque-title {
+      font-family: 'Shippori Mincho', serif;
+      font-size: clamp(1.25rem, 3.5vw, 1.65rem);
+      letter-spacing: 0.28em;
+      color: #f8fafc;
+      text-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+    }
+
+    .plaque-sub {
+      margin-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: rgba(186, 230, 253, 0.72);
+      letter-spacing: 0.06em;
+    }
+
+    /* Bottom Feeding & Creature Dock */
+    .ui-panel {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(94vw, 620px);
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 12px 14px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    body.gallery-only .museum-plaque,
+    body.gallery-only .ui-panel {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 16px);
+    }
+
+    .dock-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: #bae6fd;
+      padding: 0 4px;
+    }
+
+    .feed-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--gold);
+    }
+
+    .feed-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .feed-btn {
+      background: rgba(10, 25, 48, 0.75);
+      border: 1px solid rgba(125, 211, 252, 0.2);
+      border-radius: 14px;
+      padding: 9px 6px;
+      color: #e2e8f0;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s ease;
+    }
+
+    .feed-btn .f-name {
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .feed-btn .f-desc {
+      font-size: 0.64rem;
+      color: #94a3b8;
+    }
+
+    .feed-btn.active[data-feed="normal"] {
+      border-color: var(--gold);
+      background: rgba(251, 191, 36, 0.14);
+      color: #fef08a;
+    }
+
+    .feed-btn.active[data-feed="crab"] {
+      border-color: var(--coral);
+      background: rgba(251, 146, 60, 0.16);
+      color: #fed7aa;
+    }
+
+    .feed-btn.active[data-feed="ghost"] {
+      border-color: var(--violet);
+      background: rgba(192, 132, 252, 0.16);
+      color: #f3e8ff;
+    }
+
+    .summon-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(125, 211, 252, 0.12);
+    }
+
+    .summon-btn {
+      flex: 1;
+      min-width: 95px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      color: #cbd5e1;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .summon-btn:hover, .summon-btn:active {
+      border-color: var(--cyan);
+      color: #ffffff;
+      background: rgba(56, 189, 248, 0.18);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aquarium-canvas"></canvas>
+  <div class="caustics-overlay" aria-hidden="true"></div>
+  <div class="vignette-overlay" aria-hidden="true"></div>
+
+  <!-- Top Navigation -->
+  <header class="hud-bar">
+    <div class="hud-group">
+      <a href="../" class="glass-btn" title="hirafishの水槽（トップ）へ戻る">
+        <span>🐠 トップへ戻る</span>
+      </a>
+    </div>
+    <div class="hud-group">
+      <button type="button" class="glass-btn" id="toggle-gallery-btn" title="UIを隠して鑑賞する">
+        <span>🖼️ 鑑賞モード</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Museum Title Plaque -->
+  <div class="museum-plaque">
+    <div class="plaque-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12811 1080" role="img" aria-label="AQUARIUM"><path d="M1109,790L1513,790C1433,725 1433,725 1433,260C1433,149 1391,90 976,90L60,90C139,127 140,176 140,224L349,224C349,170 411,126 631,126L942,126C1155,126 1225,184 1225,269L1225,559C1186,412 1006,329 683,329L60,329C140,357 140,498 140,559C140,620 140,762 60,790L818,790C827,739 827,613 818,559L796,559C796,639 761,769 575,769C375,769 176,666 176,559C176,452 403,365 683,365C962,365 1189,422 1189,663C1189,710 1189,762 1109,790ZM2951,439C2951,316 2852,217 2729,217L2707,217C2707,458 2676,627 2200,627C1808,627 1694,484 1694,377C1694,269 1799,126 2200,126C2510,126 2780,110 2929,249L2951,249C2951,201 2953,127 3031,90L1578,90C1657,125 1658,295 1658,373L1658,381C1658,458 1657,629 1578,664L2200,664C2524,664 2704,580 2743,433L2743,790L3031,790C2951,725 2951,725 2951,439ZM4556,790C4476,725 4476,725 4476,260L4476,90L4152,90C4216,125 4229,272 4231,376C4219,676 3997,754 3726,754C3446,754 3219,613 3219,440C3219,279 3418,123 3618,123C3804,123 3838,318 3838,440L3861,440C3870,358 3870,168 3861,90L3103,90C3182,132 3183,340 3183,435L3183,440C3183,532 3183,747 3103,790L3736,790L3736,790C4059,790 4221,687 4267,461L4268,460L4268,790ZM5679,790L6083,790C6003,725 6003,725 6003,260C6003,149 5961,90 5546,90L4630,90C4709,127 4710,176 4710,224L4919,224C4919,170 4981,126 5201,126L5512,126C5725,126 5795,184 5795,269L5795,559C5756,412 5576,329 5253,329L4630,329C4710,357 4710,498 4710,559C4710,620 4710,762 4630,790L5388,790C5397,739 5397,613 5388,559L5366,559C5366,639 5331,769 5145,769C4945,769 4746,666 4746,559C4746,452 4973,365 5253,365C5532,365 5759,422 5759,663C5759,710 5759,762 5679,790ZM6972,551L7594,551C7514,523 7514,382 7514,321C7514,260 7514,118 7594,90L6570,90C6564,115 6564,176 6570,202C6663,156 6808,117 6972,117C7252,117 7478,213 7478,321C7478,428 7252,515 6972,515C6692,515 6466,458 6466,217L6466,90L6221,90L6221,283C6221,725 6220,726 6141,790L6430,790L6430,321C6447,388 6494,441 6570,480L6570,620C6570,731 6612,790 7028,790L7594,790C7516,753 7514,704 7514,656L7514,656L7306,656C7306,708 7248,751 7044,754C6845,751 6779,693 6779,611L6779,539C6843,548 6907,552 6972,551ZM8397,586L8375,586C8375,671 8294,777 8172,777L8172,103C8294,103 8375,209 8375,294L8397,294C8397,210 8397,118 8477,90L7658,90C7738,118 7738,210 7738,294L7761,294C7761,209 7841,103 7963,103L7963,777C7841,777 7761,671 7761,586L7738,586C7738,670 7738,762 7658,790L8477,790C8397,762 8397,670 8397,586ZM9990,790C9910,725 9910,725 9910,260L9910,90L9586,90C9650,125 9663,272 9665,376C9653,676 9431,754 9160,754C8880,754 8653,613 8653,440C8653,279 8852,123 9052,123C9238,123 9272,318 9272,440L9295,440C9304,358 9304,168 9295,90L8537,90C8616,132 8617,340 8617,435L8617,440C8617,532 8617,747 8537,790L9170,790L9170,790C9493,790 9655,687 9701,461L9702,460L9702,790ZM12474,90L12474,420L12473,419C12427,193 12265,90 11942,90L11942,90L10873,90L10872,90C10549,90 10387,193 10342,419L10341,420L10341,90L10052,90C10132,155 10132,155 10132,620L10132,790L10457,790C10392,755 10380,608 10377,504C10389,204 10611,126 10883,126C11163,126 11389,267 11389,440C11389,601 11191,757 10991,757C10804,757 10770,562 10770,440L10748,440C10738,522 10738,712 10748,790L12067,790C12076,712 12076,522 12067,440L12045,440C12045,562 12011,757 11824,757C11624,757 11425,601 11425,440C11425,267 11652,126 11932,126C12203,126 12425,204 12437,504C12435,608 12423,755 12358,790L12682,790L12682,620C12682,155 12682,155 12763,90Z" transform="translate(16,16)" fill="#7E22CE" opacity="0.85"/><path d="M1109,790L1513,790C1433,725 1433,725 1433,260C1433,149 1391,90 976,90L60,90C139,127 140,176 140,224L349,224C349,170 411,126 631,126L942,126C1155,126 1225,184 1225,269L1225,559C1186,412 1006,329 683,329L60,329C140,357 140,498 140,559C140,620 140,762 60,790L818,790C827,739 827,613 818,559L796,559C796,639 761,769 575,769C375,769 176,666 176,559C176,452 403,365 683,365C962,365 1189,422 1189,663C1189,710 1189,762 1109,790ZM2951,439C2951,316 2852,217 2729,217L2707,217C2707,458 2676,627 2200,627C1808,627 1694,484 1694,377C1694,269 1799,126 2200,126C2510,126 2780,110 2929,249L2951,249C2951,201 2953,127 3031,90L1578,90C1657,125 1658,295 1658,373L1658,381C1658,458 1657,629 1578,664L2200,664C2524,664 2704,580 2743,433L2743,790L3031,790C2951,725 2951,725 2951,439ZM4556,790C4476,725 4476,725 4476,260L4476,90L4152,90C4216,125 4229,272 4231,376C4219,676 3997,754 3726,754C3446,754 3219,613 3219,440C3219,279 3418,123 3618,123C3804,123 3838,318 3838,440L3861,440C3870,358 3870,168 3861,90L3103,90C3182,132 3183,340 3183,435L3183,440C3183,532 3183,747 3103,790L3736,790L3736,790C4059,790 4221,687 4267,461L4268,460L4268,790ZM5679,790L6083,790C6003,725 6003,725 6003,260C6003,149 5961,90 5546,90L4630,90C4709,127 4710,176 4710,224L4919,224C4919,170 4981,126 5201,126L5512,126C5725,126 5795,184 5795,269L5795,559C5756,412 5576,329 5253,329L4630,329C4710,357 4710,498 4710,559C4710,620 4710,762 4630,790L5388,790C5397,739 5397,613 5388,559L5366,559C5366,639 5331,769 5145,769C4945,769 4746,666 4746,559C4746,452 4973,365 5253,365C5532,365 5759,422 5759,663C5759,710 5759,762 5679,790ZM6972,551L7594,551C7514,523 7514,382 7514,321C7514,260 7514,118 7594,90L6570,90C6564,115 6564,176 6570,202C6663,156 6808,117 6972,117C7252,117 7478,213 7478,321C7478,428 7252,515 6972,515C6692,515 6466,458 6466,217L6466,90L6221,90L6221,283C6221,725 6220,726 6141,790L6430,790L6430,321C6447,388 6494,441 6570,480L6570,620C6570,731 6612,790 7028,790L7594,790C7516,753 7514,704 7514,656L7514,656L7306,656C7306,708 7248,751 7044,754C6845,751 6779,693 6779,611L6779,539C6843,548 6907,552 6972,551ZM8397,586L8375,586C8375,671 8294,777 8172,777L8172,103C8294,103 8375,209 8375,294L8397,294C8397,210 8397,118 8477,90L7658,90C7738,118 7738,210 7738,294L7761,294C7761,209 7841,103 7963,103L7963,777C7841,777 7761,671 7761,586L7738,586C7738,670 7738,762 7658,790L8477,790C8397,762 8397,670 8397,586ZM9990,790C9910,725 9910,725 9910,260L9910,90L9586,90C9650,125 9663,272 9665,376C9653,676 9431,754 9160,754C8880,754 8653,613 8653,440C8653,279 8852,123 9052,123C9238,123 9272,318 9272,440L9295,440C9304,358 9304,168 9295,90L8537,90C8616,132 8617,340 8617,435L8617,440C8617,532 8617,747 8537,790L9170,790L9170,790C9493,790 9655,687 9701,461L9702,460L9702,790ZM12474,90L12474,420L12473,419C12427,193 12265,90 11942,90L11942,90L10873,90L10872,90C10549,90 10387,193 10342,419L10341,420L10341,90L10052,90C10132,155 10132,155 10132,620L10132,790L10457,790C10392,755 10380,608 10377,504C10389,204 10611,126 10883,126C11163,126 11389,267 11389,440C11389,601 11191,757 10991,757C10804,757 10770,562 10770,440L10748,440C10738,522 10738,712 10748,790L12067,790C12076,712 12076,522 12067,440L12045,440C12045,562 12011,757 11824,757C11624,757 11425,601 11425,440C11425,267 11652,126 11932,126C12203,126 12425,204 12437,504C12435,608 12423,755 12358,790L12682,790L12682,620C12682,155 12682,155 12763,90Z" fill="#7CE8FF"/></svg></div>
+    <h1 class="plaque-title">水槽(仮)</h1>
+    <p class="plaque-sub" id="tank-live-status">水面をタップするとエサを落とせます</p>
+  </div>
+
+  <!-- Bottom Feeding & Creature Palette -->
+  <section class="ui-panel" aria-label="エサやりパレット">
+    <div class="dock-top-row">
+      <span>🫧 水面の好きな場所をタップしてエサやり</span>
+      <span class="feed-counter" id="fed-total-badge">あげたエサ: 0粒</span>
+    </div>
+
+    <div class="feed-selector-grid">
+      <button type="button" class="feed-btn active" data-feed="normal">
+        <span class="f-name">✨ 光の粒</span>
+        <span class="f-desc">魚たちが集まる通常エサ</span>
+      </button>
+      <button type="button" class="feed-btn" data-feed="crab">
+        <span class="f-name">🦀 沈む琥珀粒</span>
+        <span class="f-desc">底のカニが大喜びで走る</span>
+      </button>
+      <button type="button" class="feed-btn" data-feed="ghost">
+        <span class="f-name">👻 幽世の雫</span>
+        <span class="f-desc">半透明のお化け・主を呼ぶ</span>
+      </button>
+    </div>
+
+    <div class="summon-row">
+      <button type="button" class="summon-btn" data-summon="giant">🐋 巨大な主を呼ぶ</button>
+      <button type="button" class="summon-btn" data-summon="crab">🦀 カニを呼ぶ</button>
+      <button type="button" class="summon-btn" data-summon="ghost">👻 お化けを呼ぶ</button>
+      <button type="button" class="summon-btn" id="drop-random-feed">🍽️ まとめて撒く</button>
+    </div>
+  </section>
+
+  <script>
+
+    (function () {
+      const IS_DEDICATED = true;
+      const canvas = document.getElementById('aquarium-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let W = (canvas.width = window.innerWidth);
+      let H = (canvas.height = window.innerHeight);
+
+      window.addEventListener('resize', () => {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      });
+
+      const palettes = [
+        { body: '#38bdf8', glow: 'rgba(56, 189, 248, 0.5)' },
+        { body: '#2dd4bf', glow: 'rgba(45, 212, 191, 0.5)' },
+        { body: '#a7f3d0', glow: 'rgba(167, 243, 208, 0.5)' },
+        { body: '#f472b6', glow: 'rgba(244, 114, 182, 0.42)' },
+        { body: '#fbbf24', glow: 'rgba(251, 191, 36, 0.45)' },
+        { body: '#c084fc', glow: 'rgba(192, 132, 252, 0.45)' }
+      ];
+
+      // 1. Regular Bioluminescent Fish
+      const FISH_COUNT = IS_DEDICATED
+        ? Math.min(28, Math.max(16, Math.floor(W / 55)))
+        : Math.min(20, Math.max(12, Math.floor(W / 75)));
+
+      const fishes = [];
+      function createFish(isGiant = false, spawnEdge = false) {
+        const pal = isGiant
+          ? (Math.random() > 0.45
+              ? { body: '#fde68a', glow: 'rgba(251, 191, 36, 0.75)', sub: '#38bdf8' }
+              : { body: '#e0f2fe', glow: 'rgba(56, 189, 248, 0.8)', sub: '#2dd4bf' })
+          : palettes[Math.floor(Math.random() * palettes.length)];
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        const size = isGiant ? (26 + Math.random() * 14) : (6 + Math.random() * 9.5);
+        const startX = spawnEdge ? (dir > 0 ? -size * 3 : W + size * 3) : Math.random() * W;
+        return {
+          x: startX,
+          y: 70 + Math.random() * (H - 160),
+          vx: dir * (isGiant ? (0.28 + Math.random() * 0.25) : (0.38 + Math.random() * 0.7)),
+          vy: (Math.random() - 0.5) * (isGiant ? 0.12 : 0.25),
+          size,
+          baseSize: size,
+          isGiant,
+          color: pal.body,
+          subColor: pal.sub || pal.body,
+          glow: pal.glow,
+          phase: Math.random() * Math.PI * 2,
+          fedCount: 0,
+          tempGiant: isGiant && spawnEdge
+        };
+      }
+
+      for (let i = 0; i < FISH_COUNT; i++) {
+        fishes.push(createFish(false, false));
+      }
+      // Start with 1 Giant Fish already cruising so the user sees it right away, plus random spawns
+      fishes.push(createFish(true, false));
+
+      // 2. Bottom-Scuttling Bioluminescent Crabs (カニ)
+      const crabs = [];
+      function spawnCrab(fromEdge = false) {
+        if (crabs.length >= (IS_DEDICATED ? 4 : 2)) return;
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        const crabPalettes = [
+          { shell: '#fb7185', glow: 'rgba(251, 113, 133, 0.55)', eye: '#fde68a' },
+          { shell: '#fdba74', glow: 'rgba(251, 146, 60, 0.55)', eye: '#fef08a' },
+          { shell: '#67e8f9', glow: 'rgba(34, 211, 238, 0.55)', eye: '#ffffff' }
+        ];
+        const pal = crabPalettes[Math.floor(Math.random() * crabPalettes.length)];
+        crabs.push({
+          x: fromEdge ? (dir > 0 ? -30 : W + 30) : (60 + Math.random() * (W - 120)),
+          y: H - 18 - Math.random() * 10,
+          vx: dir * (0.35 + Math.random() * 0.4),
+          size: 11 + Math.random() * 5,
+          color: pal.shell,
+          glow: pal.glow,
+          eyeColor: pal.eye,
+          phase: Math.random() * Math.PI * 2,
+          pauseTimer: 0,
+          snipTimer: 0
+        });
+      }
+      spawnCrab(false);
+      if (IS_DEDICATED || Math.random() < 0.75) spawnCrab(false);
+
+      // 3. Translucent Ghostly Creatures (半透明のお化け / 幽霊クラゲ・クリオネ)
+      const ghosts = [];
+      function spawnGhost(customX, customY) {
+        if (ghosts.length >= (IS_DEDICATED ? 5 : 3)) return;
+        const x = customX !== undefined ? customX : (80 + Math.random() * (W - 160));
+        const y = customY !== undefined ? customY : (100 + Math.random() * (H - 220));
+        const tintList = [
+          { fill: '224, 242, 254', glow: 'rgba(125, 211, 252, 0.55)' },
+          { fill: '233, 213, 255', glow: 'rgba(192, 132, 252, 0.55)' },
+          { fill: '204, 251, 241', glow: 'rgba(94, 234, 212, 0.55)' }
+        ];
+        const tint = tintList[Math.floor(Math.random() * tintList.length)];
+        ghosts.push({
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: -0.18 - Math.random() * 0.22,
+          size: 15 + Math.random() * 9,
+          rgb: tint.fill,
+          glow: tint.glow,
+          phase: Math.random() * Math.PI * 2,
+          alpha: 0.01,
+          maxAlpha: 0.38 + Math.random() * 0.24,
+          life: 0,
+          maxLife: 750 + Math.random() * 650
+        });
+      }
+      // Initial ghost so the user can spot one soon
+      spawnGhost();
+
+      // Periodic rare creature spawner
+      setInterval(() => {
+        // Chance to spawn a translucent ghost
+        if (Math.random() < 0.55) spawnGhost();
+        // Chance to spawn another crab if fewer than max
+        if (Math.random() < 0.4) spawnCrab(true);
+        // Chance for an extra giant fish to glide through from off-screen
+        const giantCount = fishes.filter(f => f.isGiant).length;
+        if (giantCount < (IS_DEDICATED ? 3 : 2) && Math.random() < 0.45) {
+          fishes.push(createFish(true, true));
+        }
+      }, 6500);
+
+      // Bubbles, Ripples, Food Pellets & Eat Sparkles
+      const bubbles = Array.from({ length: 38 }, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: 1 + Math.random() * 3.2,
+        vy: 0.25 + Math.random() * 0.65,
+        wobble: Math.random() * Math.PI * 2
+      }));
+      const ripples = [];
+      const pellets = [];
+      const eatEffects = [];
+
+      // Feed types: 'normal' (floating/slow sink), 'crab' (heavy amber sink), 'ghost' (mystic slow drift)
+      window.currentFeedType = 'normal';
+
+      function spawnFood(x, y, type) {
+        const feedType = type || window.currentFeedType || 'normal';
+        ripples.push({ x, y, r: 4, maxR: 95 + Math.random() * 45, alpha: 0.58 });
+
+        for (let i = 0; i < 4; i++) {
+          bubbles.push({
+            x: x + (Math.random() - 0.5) * 26,
+            y: y + (Math.random() - 0.5) * 26,
+            r: 1.4 + Math.random() * 2.4,
+            vy: 0.6 + Math.random() * 0.9,
+            wobble: Math.random() * Math.PI * 2,
+            temp: true
+          });
+        }
+
+        const count = feedType === 'ghost' ? 3 : (IS_DEDICATED ? 6 : 4);
+        for (let i = 0; i < count; i++) {
+          const px = x + (Math.random() - 0.5) * 56;
+          const py = y + (Math.random() - 0.5) * 24;
+          if (feedType === 'crab') {
+            pellets.push({
+              x: px,
+              y: py,
+              vy: 1.15 + Math.random() * 0.5,
+              r: 3.4,
+              color: '#fb923c',
+              glow: 'rgba(251, 146, 60, 0.9)',
+              type: 'crab',
+              life: 620
+            });
+          } else if (feedType === 'ghost') {
+            pellets.push({
+              x: px,
+              y: py,
+              vy: 0.18 + Math.random() * 0.15,
+              r: 3.6,
+              color: '#e9d5ff',
+              glow: 'rgba(192, 132, 252, 0.95)',
+              type: 'ghost',
+              life: 520
+            });
+          } else {
+            pellets.push({
+              x: px,
+              y: py,
+              vy: 0.42 + Math.random() * 0.28,
+              r: 2.7,
+              color: '#fde68a',
+              glow: 'rgba(251, 191, 36, 0.85)',
+              type: 'normal',
+              life: 480
+            });
+          }
+        }
+
+        // Mystic feed has high chance to summon a ghost or giant fish!
+        if (feedType === 'ghost') {
+          if (Math.random() < 0.75) spawnGhost(x + (Math.random() - 0.5) * 120, y + 40);
+          if (fishes.filter(f => f.isGiant).length < 3 && Math.random() < 0.45) {
+            fishes.push(createFish(true, true));
+          }
+        } else if (feedType === 'crab') {
+          spawnCrab(true);
+        }
+
+        if (typeof window.onAquariumFed === 'function') {
+          window.onAquariumFed(count, feedType);
+        }
+      }
+
+      window.spawnAquariumFood = spawnFood;
+      window.summonRareCreature = function (kind) {
+        if (kind === 'giant') {
+          fishes.push(createFish(true, true));
+        } else if (kind === 'crab') {
+          spawnCrab(true);
+        } else if (kind === 'ghost') {
+          spawnGhost(W * (0.25 + Math.random() * 0.5), H * (0.3 + Math.random() * 0.4));
+        }
+      };
+
+      window.addEventListener('pointerdown', (e) => {
+        const el = e.target;
+        if (el && el.closest && el.closest('a, button, .ui-panel, .hud-bar')) return;
+        spawnFood(e.clientX, e.clientY, window.currentFeedType);
+      }, { passive: true });
+
+      let lastMove = 0;
+      window.addEventListener('pointermove', (e) => {
+        const now = performance.now();
+        if (now - lastMove > 130) {
+          lastMove = now;
+          ripples.push({ x: e.clientX, y: e.clientY, r: 2, maxR: 46, alpha: 0.22 });
+        }
+      }, { passive: true });
+
+      const feedBtn = document.getElementById('feed-fish-btn');
+      if (feedBtn) {
+        feedBtn.addEventListener('click', () => {
+          const rx = W * (0.22 + Math.random() * 0.56);
+          const ry = H * (0.18 + Math.random() * 0.35);
+          spawnFood(rx, ry, window.currentFeedType);
+        });
+      }
+
+      // Draw Regular & Giant Fish
+      function drawFish(f, t) {
+        const angle = Math.atan2(f.vy, f.vx);
+        const wagSpeed = f.isGiant ? 0.0042 : 0.0082;
+        const wag = Math.sin(t * wagSpeed + f.phase) * (f.isGiant ? 0.24 : 0.32);
+
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        ctx.rotate(angle);
+
+        ctx.shadowColor = f.glow;
+        ctx.shadowBlur = f.isGiant ? 26 : 14;
+        ctx.fillStyle = f.color;
+
+        if (f.isGiant) {
+          // Majestic Giant Fish: layered translucent fins + sleek whale-ray / koi-leviathan silhouette
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          ctx.fillStyle = f.subColor;
+          ctx.beginPath();
+          ctx.moveTo(f.size * 0.35, 0);
+          ctx.quadraticCurveTo(-f.size * 0.15, -f.size * 1.35 + wag * f.size * 0.5, -f.size * 0.95, -f.size * 0.85);
+          ctx.quadraticCurveTo(-f.size * 0.4, -f.size * 0.2, -f.size * 0.5, 0);
+          ctx.quadraticCurveTo(-f.size * 0.4, f.size * 0.2, -f.size * 0.95, f.size * 0.85);
+          ctx.quadraticCurveTo(-f.size * 0.15, f.size * 1.35 + wag * f.size * 0.5, f.size * 0.35, 0);
+          ctx.fill();
+          ctx.restore();
+
+          // Main luminous body
+          ctx.beginPath();
+          ctx.moveTo(f.size * 1.45, 0);
+          ctx.quadraticCurveTo(f.size * 0.35, -f.size * 0.56, -f.size * 1.0, 0);
+          ctx.quadraticCurveTo(f.size * 0.35, f.size * 0.56, f.size * 1.45, 0);
+          ctx.fill();
+
+          // Long ribbon tail
+          ctx.beginPath();
+          ctx.moveTo(-f.size * 0.85, 0);
+          ctx.quadraticCurveTo(
+            -f.size * 1.5,
+            -f.size * 0.65 + wag * f.size,
+            -f.size * 2.25,
+            -f.size * 0.45 + wag * f.size * 1.5
+          );
+          ctx.quadraticCurveTo(
+            -f.size * 1.65,
+            wag * f.size * 0.6,
+            -f.size * 2.25,
+            f.size * 0.45 + wag * f.size * 1.5
+          );
+          ctx.quadraticCurveTo(
+            -f.size * 1.5,
+            f.size * 0.65 + wag * f.size,
+            -f.size * 0.85,
+            0
+          );
+          ctx.globalAlpha = 0.72;
+          ctx.fill();
+
+          // Glowing eye spot
+          ctx.globalAlpha = 0.95;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(f.size * 0.88, (f.vx >= 0 ? -1 : 1) * f.size * 0.14, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Sleek Regular Fish
+          ctx.beginPath();
+          ctx.moveTo(f.size * 1.35, 0);
+          ctx.quadraticCurveTo(f.size * 0.2, -f.size * 0.58, -f.size * 0.9, 0);
+          ctx.quadraticCurveTo(f.size * 0.2, f.size * 0.58, f.size * 1.35, 0);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(-f.size * 0.75, 0);
+          ctx.lineTo(-f.size * 1.65, -f.size * 0.55 + wag * f.size);
+          ctx.lineTo(-f.size * 1.35, wag * f.size * 0.4);
+          ctx.lineTo(-f.size * 1.65, f.size * 0.55 + wag * f.size);
+          ctx.closePath();
+          ctx.globalAlpha = 0.78;
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // Draw Bottom-Scuttling Crab (カニ)
+      function drawCrab(c, t) {
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        const bob = Math.sin(t * 0.012 + c.phase) * 1.4;
+        ctx.translate(0, bob);
+
+        ctx.shadowColor = c.glow;
+        ctx.shadowBlur = 14;
+        ctx.strokeStyle = c.color;
+        ctx.fillStyle = c.color;
+        ctx.lineWidth = 1.8;
+        ctx.lineCap = 'round';
+
+        const s = c.size;
+        // 3 legs on each side
+        for (let side of [-1, 1]) {
+          for (let leg = 0; leg < 3; leg++) {
+            const step = Math.sin(t * 0.018 + c.phase + leg * 1.3 + (side > 0 ? 0 : Math.PI)) * 2.8;
+            const lx0 = side * (s * 0.55 + leg * 1.5);
+            const ly0 = s * 0.1 + leg * 1.2;
+            const lx1 = side * (s * 1.25 + leg * 2.2);
+            const ly1 = -s * 0.15 + leg * 2.2 + step * 0.4;
+            const lx2 = side * (s * 1.55 + leg * 1.8);
+            const ly2 = s * 0.62 + step;
+
+            ctx.beginPath();
+            ctx.moveTo(lx0, ly0);
+            ctx.lineTo(lx1, ly1);
+            ctx.lineTo(lx2, ly2);
+            ctx.stroke();
+          }
+        }
+
+        // 2 Raised Pincer Claws (ハサミ)
+        const snip = c.snipTimer > 0
+          ? Math.abs(Math.sin(t * 0.04)) * 0.45
+          : (0.15 + Math.sin(t * 0.006 + c.phase) * 0.12);
+        for (let side of [-1, 1]) {
+          ctx.save();
+          ctx.translate(side * s * 0.75, -s * 0.25);
+          ctx.rotate(side * (-0.35 + Math.sin(t * 0.005 + c.phase) * 0.1));
+          // Arm
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(side * s * 0.45, -s * 0.55);
+          ctx.stroke();
+          // Pincer
+          ctx.translate(side * s * 0.45, -s * 0.55);
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.36, -Math.PI * 0.8 + snip, Math.PI * 0.8 - snip);
+          ctx.lineTo(0, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Oval Carapace (甲羅)
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s * 0.92, s * 0.58, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye stalks & glowing eyes
+        ctx.fillStyle = c.eyeColor;
+        for (let side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.arc(side * s * 0.36, -s * 0.58, 2.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // Draw Translucent Ghost Creature (半透明のお化け / クリオネ)
+      function drawGhost(g, t) {
+        ctx.save();
+        const sway = Math.sin(t * 0.003 + g.phase) * 6;
+        const bob = Math.cos(t * 0.004 + g.phase) * 4;
+        ctx.translate(g.x + sway, g.y + bob);
+        ctx.rotate(Math.sin(t * 0.0025 + g.phase) * 0.14);
+
+        const s = g.size;
+        const flap = Math.sin(t * 0.009 + g.phase);
+
+        ctx.shadowColor = g.glow;
+        ctx.shadowBlur = 22;
+
+        // Outer translucent ghostly veil
+        const grad = ctx.createRadialGradient(0, -s * 0.3, s * 0.1, 0, s * 0.2, s * 1.6);
+        grad.addColorStop(0, `rgba(${g.rgb}, ${g.alpha * 1.15})`);
+        grad.addColorStop(0.6, `rgba(${g.rgb}, ${g.alpha * 0.65})`);
+        grad.addColorStop(1, `rgba(${g.rgb}, 0)`);
+        ctx.fillStyle = grad;
+
+        // Fluttering little side wings / ghost hands (パタパタする小さな羽/手)
+        for (let side of [-1, 1]) {
+          ctx.save();
+          ctx.translate(side * s * 0.55, -s * 0.1);
+          ctx.rotate(side * (0.35 + flap * 0.42));
+          ctx.beginPath();
+          ctx.ellipse(side * s * 0.38, 0, s * 0.42, s * 0.18, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Ghostly rounded dome head + wavy skirt tail
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.35, s * 0.65, Math.PI, 0, false);
+        ctx.quadraticCurveTo(s * 0.68, s * 0.45, s * 0.45, s * 0.95);
+        // Wavy bottom hem (3 gentle waves)
+        const w1 = Math.sin(t * 0.008 + g.phase) * (s * 0.14);
+        const w2 = Math.cos(t * 0.008 + g.phase) * (s * 0.14);
+        ctx.quadraticCurveTo(s * 0.22, s * 0.65 + w1, 0, s * 1.02 + w2);
+        ctx.quadraticCurveTo(-s * 0.22, s * 0.65 - w1, -s * 0.45, s * 0.95);
+        ctx.quadraticCurveTo(-s * 0.68, s * 0.45, -s * 0.65, -s * 0.35);
+        ctx.closePath();
+        ctx.fill();
+
+        // Inner mystic core (ほんのり光るコア)
+        ctx.fillStyle = `rgba(255, 255, 255, ${g.alpha * 0.55})`;
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.2, s * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cute faint ghost eyes
+        ctx.fillStyle = `rgba(15, 23, 42, ${g.alpha * 1.1})`;
+        ctx.beginPath();
+        ctx.arc(-s * 0.2, -s * 0.42, 1.8, 0, Math.PI * 2);
+        ctx.arc(s * 0.2, -s * 0.42, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function animate(t) {
+        ctx.clearRect(0, 0, W, H);
+
+        // Deep Sea Gallery Gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#040d1d');
+        grad.addColorStop(0.55, '#06152d');
+        grad.addColorStop(1, '#020710');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Subtle Seabed Sand/Glow Line at the very bottom for Crabs
+        const bedGrad = ctx.createLinearGradient(0, H - 36, 0, H);
+        bedGrad.addColorStop(0, 'rgba(12, 36, 68, 0)');
+        bedGrad.addColorStop(1, 'rgba(14, 48, 86, 0.38)');
+        ctx.fillStyle = bedGrad;
+        ctx.fillRect(0, H - 36, W, 36);
+
+        // 1. Update & Draw Food Pellets
+        for (let i = pellets.length - 1; i >= 0; i--) {
+          const p = pellets[i];
+          // Stop sinking right at the seabed floor so crabs can eat it!
+          if (p.y < H - 14) {
+            p.y += p.vy;
+            p.x += Math.sin(t * 0.004 + i) * (p.type === 'ghost' ? 0.45 : 0.2);
+          }
+          p.life--;
+          ctx.save();
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.glow;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          if (p.life <= 0) pellets.splice(i, 1);
+        }
+
+        // 2. Update & Draw Bubbles
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+          const b = bubbles[i];
+          b.y -= b.vy;
+          b.x += Math.sin(t * 0.002 + b.wobble) * 0.25;
+          if (b.y < -10) {
+            if (b.temp) {
+              bubbles.splice(i, 1);
+              continue;
+            }
+            b.y = H + 10;
+            b.x = Math.random() * W;
+          }
+          ctx.save();
+          ctx.strokeStyle = 'rgba(186, 230, 253, 0.28)';
+          ctx.fillStyle = 'rgba(186, 230, 253, 0.08)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 3. Update & Draw Translucent Ghosts (半透明のお化け)
+        for (let i = ghosts.length - 1; i >= 0; i--) {
+          const g = ghosts[i];
+          g.life++;
+          if (g.life < 120) {
+            g.alpha = Math.min(g.maxAlpha, (g.life / 120) * g.maxAlpha);
+          } else if (g.life > g.maxLife - 140) {
+            g.alpha = Math.max(0, ((g.maxLife - g.life) / 140) * g.maxAlpha);
+          }
+
+          // Gently attracted to mystic 'ghost' food or normal food nearby
+          for (const p of pellets) {
+            const d = Math.hypot(p.x - g.x, p.y - g.y);
+            if (d < 220) {
+              g.vx += ((p.x - g.x) / (d || 1)) * 0.012;
+              g.vy += ((p.y - g.y) / (d || 1)) * 0.012;
+              if (d < 18) {
+                p.life = 0;
+                eatEffects.push({ x: p.x, y: p.y, r: 3, maxR: 28, alpha: 0.75, color: '#e9d5ff' });
+              }
+            }
+          }
+
+          g.vx *= 0.985;
+          g.vy = Math.max(-0.55, Math.min(0.45, g.vy));
+          g.x += g.vx;
+          g.y += g.vy;
+
+          if (g.y < -50 || g.life >= g.maxLife) {
+            ghosts.splice(i, 1);
+            continue;
+          }
+          drawGhost(g, t);
+        }
+
+        // 4. Update & Draw Regular & Giant Fishes
+        for (let i = fishes.length - 1; i >= 0; i--) {
+          const f = fishes[i];
+          if (pellets.length > 0) {
+            let nearest = null;
+            let minDist = f.isGiant ? 340 : 270;
+            for (const p of pellets) {
+              const d = Math.hypot(p.x - f.x, p.y - f.y);
+              if (d < minDist) {
+                minDist = d;
+                nearest = p;
+              }
+            }
+            if (nearest) {
+              const pull = f.isGiant ? 0.022 : 0.045;
+              f.vx += ((nearest.x - f.x) / (minDist || 1)) * pull;
+              f.vy += ((nearest.y - f.y) / (minDist || 1)) * pull;
+              const eatRadius = f.isGiant ? f.size * 0.95 : 13;
+              if (minDist < eatRadius) {
+                nearest.life = 0;
+                f.fedCount++;
+                // Grow slightly when fed!
+                f.size = Math.min(f.baseSize * 1.35, f.size + 0.35);
+                eatEffects.push({
+                  x: nearest.x,
+                  y: nearest.y,
+                  r: 2,
+                  maxR: f.isGiant ? 36 : 22,
+                  alpha: 0.85,
+                  color: f.color
+                });
+              }
+            }
+          }
+
+          const speed = Math.hypot(f.vx, f.vy);
+          const maxSpd = f.isGiant
+            ? (pellets.length > 0 ? 1.15 : 0.62)
+            : (pellets.length > 0 ? 1.9 : 1.05);
+          const minSpd = f.isGiant ? 0.25 : 0.35;
+
+          if (speed > maxSpd) {
+            f.vx = (f.vx / speed) * maxSpd;
+            f.vy = (f.vy / speed) * maxSpd;
+          } else if (speed < minSpd) {
+            f.vx *= 1.04;
+          }
+
+          f.vy += Math.sin(t * 0.0015 + f.phase) * (f.isGiant ? 0.0018 : 0.003);
+          f.x += f.vx;
+          f.y += f.vy;
+
+          // Giant fish trailing bioluminescent motes
+          if (f.isGiant && Math.random() < 0.25) {
+            bubbles.push({
+              x: f.x - Math.cos(Math.atan2(f.vy, f.vx)) * f.size,
+              y: f.y - Math.sin(Math.atan2(f.vy, f.vx)) * f.size + (Math.random() - 0.5) * 10,
+              r: 1.1 + Math.random() * 1.4,
+              vy: 0.18 + Math.random() * 0.25,
+              wobble: Math.random() * Math.PI * 2,
+              temp: true
+            });
+          }
+
+          const margin = f.isGiant ? 110 : 45;
+          if (f.x > W + margin) {
+            if (f.tempGiant && fishes.filter(x => x.isGiant).length > 1) {
+              fishes.splice(i, 1);
+              continue;
+            }
+            f.x = -margin;
+          }
+          if (f.x < -margin) {
+            if (f.tempGiant && fishes.filter(x => x.isGiant).length > 1) {
+              fishes.splice(i, 1);
+              continue;
+            }
+            f.x = W + margin;
+          }
+          if (f.y < 45) f.vy += 0.02;
+          if (f.y > H - 42) f.vy -= 0.02;
+
+          drawFish(f, t);
+        }
+
+        // 5. Update & Draw Bottom Crabs (カニ)
+        for (let i = crabs.length - 1; i >= 0; i--) {
+          const c = crabs[i];
+          c.y = H - 16;
+          if (c.snipTimer > 0) c.snipTimer--;
+
+          // Look for sinking pellets near the bottom
+          let targetPellet = null;
+          let bestDist = 280;
+          for (const p of pellets) {
+            if (p.y > H - 140) {
+              const d = Math.abs(p.x - c.x);
+              if (d < bestDist) {
+                bestDist = d;
+                targetPellet = p;
+              }
+            }
+          }
+
+          if (targetPellet) {
+            const dir = targetPellet.x > c.x ? 1 : -1;
+            c.vx = dir * 1.35;
+            if (Math.abs(targetPellet.x - c.x) < 16 && targetPellet.y > H - 38) {
+              targetPellet.life = 0;
+              c.snipTimer = 35;
+              eatEffects.push({
+                x: c.x,
+                y: c.y - 10,
+                r: 2,
+                maxR: 24,
+                alpha: 0.9,
+                color: '#fb923c'
+              });
+            }
+          } else {
+            // Natural sideways stroll & occasional pause
+            if (c.pauseTimer > 0) {
+              c.pauseTimer--;
+            } else {
+              if (Math.random() < 0.005) {
+                c.pauseTimer = 45 + Math.floor(Math.random() * 60);
+              }
+              if (Math.abs(c.vx) > 0.65) c.vx *= 0.95;
+              if (Math.abs(c.vx) < 0.28) c.vx = (c.vx >= 0 ? 1 : -1) * 0.38;
+            }
+          }
+
+          if (c.pauseTimer <= 0 || targetPellet) {
+            c.x += c.vx;
+          }
+
+          if (c.x < 24) c.vx = Math.abs(c.vx);
+          if (c.x > W - 24) c.vx = -Math.abs(c.vx);
+
+          drawCrab(c, t);
+        }
+
+        // 6. Update & Draw Eat Sparkle Rings & Water Ripples
+        for (let i = eatEffects.length - 1; i >= 0; i--) {
+          const ef = eatEffects[i];
+          ef.r += 1.2;
+          ef.alpha *= 0.92;
+          ctx.save();
+          ctx.strokeStyle = ef.color;
+          ctx.globalAlpha = ef.alpha;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.arc(ef.x, ef.y, ef.r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          if (ef.alpha < 0.04 || ef.r > ef.maxR) eatEffects.splice(i, 1);
+        }
+
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const rp = ripples[i];
+          rp.r += 1.6;
+          rp.alpha *= 0.96;
+          ctx.save();
+          ctx.strokeStyle = `rgba(125, 211, 252, ${rp.alpha})`;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          if (rp.alpha < 0.02 || rp.r > rp.maxR) ripples.splice(i, 1);
+        }
+
+        // Update live creature counter if present on dedicated page
+        const countEl = document.getElementById('tank-live-status');
+        if (countEl && Math.floor(t) % 30 === 0) {
+          const giants = fishes.filter(f => f.isGiant).length;
+          countEl.textContent = `光魚:${fishes.length - giants}  主(巨大):${giants}  カニ:${crabs.length}  お化け:${ghosts.length}`;
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    })();
+    
+
+    (function () {
+      let totalFed = 0;
+      const badge = document.getElementById('fed-total-badge');
+      window.onAquariumFed = function (count) {
+        totalFed += count;
+        if (badge) badge.textContent = `あげたエサ: ${totalFed}粒`;
+      };
+
+      // Feed type buttons
+      const feedBtns = document.querySelectorAll('.feed-btn[data-feed]');
+      feedBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          feedBtns.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          window.currentFeedType = btn.getAttribute('data-feed') || 'normal';
+        });
+      });
+
+      // Summon buttons
+      document.querySelectorAll('.summon-btn[data-summon]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const kind = btn.getAttribute('data-summon');
+          if (typeof window.summonRareCreature === 'function') {
+            window.summonRareCreature(kind);
+          }
+        });
+      });
+
+      // Drop random feed button
+      const dropBtn = document.getElementById('drop-random-feed');
+      if (dropBtn) {
+        dropBtn.addEventListener('click', () => {
+          const rx = window.innerWidth * (0.2 + Math.random() * 0.6);
+          const ry = window.innerHeight * (0.18 + Math.random() * 0.35);
+          if (typeof window.spawnAquariumFood === 'function') {
+            window.spawnAquariumFood(rx, ry, window.currentFeedType);
+          }
+        });
+      }
+
+      // Toggle Gallery View (Hide UI)
+      const galleryBtn = document.getElementById('toggle-gallery-btn');
+      if (galleryBtn) {
+        galleryBtn.addEventListener('click', () => {
+          const hidden = document.body.classList.toggle('gallery-only');
+          galleryBtn.innerHTML = hidden ? '<span>🎛️ パネル表示</span>' : '<span>🖼️ 鑑賞モード</span>';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

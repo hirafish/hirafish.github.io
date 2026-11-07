@@ -1,7 +1,9 @@
-const CACHE_NAME = 'hirafish-aquarium-v5';
+const CACHE_NAME = 'hirafish-aquarium-v6';
 const ASSETS = [
   './',
   './index.html',
+  './aquarium/',
+  './aquarium/index.html',
   './nazo-practice/',
   './nazo-practice/index.html',
   './nazo-practice/a1z26/',
@@ -31,7 +33,6 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Network-First strategy: Always fetch latest when online, fallback to cache when offline
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
