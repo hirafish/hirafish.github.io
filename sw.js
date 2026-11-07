@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hirafish-aquarium-v2';
+const CACHE_NAME = 'hirafish-aquarium-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -19,13 +19,30 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
-    )
+    ).then(() => self.clients.claim())
+     .then(() => self.clients.matchAll({ type: 'window' }))
+     .then((clients) => {
+       clients.forEach((client) => {
+         if ('navigate' in client) {
+           client.navigate(client.url);
+         }
+       });
+     })
   );
-  self.clients.claim();
 });
 
+// Network-First strategy: Always fetch latest when online, fallback to cache when offline
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request)
+      .then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
